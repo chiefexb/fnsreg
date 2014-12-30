@@ -8,17 +8,14 @@
  <connection_codepage>WIN1251</connection_codepage>
  <codepage>CP1251</codepage>
 </database_params>
-<logging>
-  <log_path>/root/git/fsspregmvv/</log_path>
-  <log_file>rosr.log</log_file>
-  <log_file2>rosr2.log</log_file2> 
-</logging>
 
 <file>
  <output_path>/home/chief/tofns/</output_path>
  <input_path>/home/chief/fromfns/</input_path>
  <input_path_arc>/home/chief/fromfnsarc/</input_path_arc>
- <input_path_spo>/home/chief/fromspo/</input_path_err>
+ <input_path_spo>/home/chief/fromspo/</input_path_spo>
+ <input_path_spo_arc>/home/chief/fromspo/</input_path_spo_arc>
+
  <prefix>fns</prefix>
  <scheme>
 <Requests records=''>
