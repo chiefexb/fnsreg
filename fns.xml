@@ -10,12 +10,11 @@
 </database_params>
 
 <file>
- <output_path>/home/chief/tofns/</output_path>
- <input_path>/home/chief/fromfns/</input_path>
- <input_path_arc>/home/chief/fromfnsarc/</input_path_arc>
- <input_path_spo>/home/chief/fromspo/</input_path_spo>
- <input_path_spo_arc>/home/chief/fromspo/</input_path_spo_arc>
-
+ <output_path>/home/chief/work/tofns/</output_path>
+ <input_path>/home/chief/work/fromfns/</input_path>
+ <input_path_arc>/home/chief/work/fromfnsarc/</input_path_arc>
+ <input_path_spo>/home/chief/work/fromspo/</input_path_spo>
+ <input_path_spo_arc>/home/chief/work/fromspoarc/</input_path_spo_arc>
  <prefix>fns</prefix>
  <scheme>
 <Requests records=''>
