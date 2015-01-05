@@ -2,9 +2,9 @@
 <codepage>UTF-8</codepage>
 <database_params>
  <username>SYSDBA</username>
- <password>masterkey</password>
- <hostname>10.9.4.16</hostname>
- <database>ncore-fssp</database>
+ <password></password>
+ <hostname>10.9.4.11</hostname>
+ <database>fns</database>
  <connection_codepage>WIN1251</connection_codepage>
  <codepage>CP1251</codepage>
 </database_params>
@@ -15,6 +15,7 @@
  <input_path_arc>/home/chief/work/fromfnsarc/</input_path_arc>
  <input_path_spo>/home/chief/work/fromspo/</input_path_spo>
  <input_path_spo_arc>/home/chief/work/fromspoarc/</input_path_spo_arc>
+ <input_path_spo_err>/home/chief/work/fromspoerr/</input_path_spo_err>
  <prefix>fns</prefix>
  <scheme>
 <Requests records=''>

@@ -30,6 +30,9 @@ def getgenerator(cur,gen):
  except:
   g=-1
  return g
+def quoted(a):
+ st="'"+a+"'"
+ return st
 def main():
 #Обработка параметров
  #print len (sys.argv)
@@ -63,7 +66,8 @@ def main():
  input_path=filepar.find('input_path').text
  input_arc_path=filepar.find('input_path_arc').text
  input_spo_path=filepar.find('input_path_spo').text
- input_spo__arc_path=filepar.find('input_path_spo_arc').text
+ input_spo_arc_path=filepar.find('input_path_spo_arc').text
+ input_spo_err_path=filepar.find('input_path_spo_err').text
  #Определение схемы файла должна быть ветка для типов файлов пока разбираем xml
  filescheme=filepar.findall('scheme')
  zaproses=filescheme[0][0]
@@ -83,10 +87,39 @@ def main():
   xml=etree.parse(xmlfile)
   xmlroot=xml.getroot()
   print xmlroot.tag
-  zaporoses=xmlroot.findall(zaprostag)
-  print len (zaporoses)
-  sqlreq=INSERT INTO REQUESTS (ID, DATE_LOAD, PACKET_ID, PACKET_DATE, REQUEST_ID, REQUEST_DATE, DEBITOR_NAME, DEBITOR_BIRTHDAY, DEBITOR_INN, PROCESSED, DATE_PROCESSED) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+  zaproses=xmlroot.findall(zaprostag)
+  print len (zaproses)
+  sqlreq='INSERT INTO REQUESTS (ID, DATE_LOAD, PACKET_ID, PACKET_DATE, REQUEST_ID, REQUEST_DATE, DEBITOR_NAME, DEBITOR_BIRTHDAY, DEBITOR_INN, PROCESSED, DATE_PROCESSED) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);'
+  now=datetime.now()
+  date_load=datetime.strftime(now,'%d.%m.%Y')
+  print date_load
+  chh= zaproses[0]
+  rr={}
+   #Соединяемся с базой ОСП
+  try:
+   con = fdb.connect (host=hostname, database=database, user=username, password=password,charset=concodepage)
+  except  Exception, e:
+   print("Ошибка при открытии базы данных:\n"+str(e))
+   sys.exit(2)
+  cur = con.cursor()
 
+  for ffff in fld.keys():
+   rr[ffff]=chh.find(fld[ffff]).text
+  print rr
+  #Проверка на дубликаты, если в данном файле packet_id совпадает с тем что в базе
+  #Прекратить загрузку
+  packet_id=rr['packet_id']
+  sq='select * from requests where requests.packet_id='+(packet_id)
+  print sq
+  cur.execute(sq)
+  rec=cur.fetchall()
+  print len(rec)
+  if len(rec)==0:
+   id=getgenerator(cur,'GENREQ')
+  else:
+   st=u'Загрузка файла '+ff+u' невозможна, так как он уже загружен в базу, packet_id='+(packet_id)+u'есьб  в базе.'
+   logging.error( st ) #logging.error
+   rename(input_path+ff, input_err_path+ff)
  #EndIF
  return
 if __name__ == "__main__":
