@@ -71,6 +71,13 @@ def main():
  #Определение схемы файла должна быть ветка для типов файлов пока разбираем xml
  filescheme=filepar.findall('scheme')
  zaproses=filescheme[0][0]
+  #Соединяемся с базой ОСП
+ try:
+  con = fdb.connect (host=hostname, database=database, user=username, password=password,charset=concodepage)
+ except  Exception, e:
+  print("Ошибка при открытии базы данных:\n"+str(e))
+  sys.exit(2)
+ cur = con.cursor()
  if sys.argv[1]=='upload':
   logging.basicConfig(format = u'%(levelname)-8s [%(asctime)s] %(message)s', level = logging.DEBUG, filename = './upload.log')
   print zaproses.tag
@@ -81,13 +88,6 @@ def main():
    if ch.text in fields:
     fld[ch.text]=ch.tag
   print fld
-   #Соединяемся с базой ОСП
-  try:
-   con = fdb.connect (host=hostname, database=database, user=username, password=password,charset=concodepage)
-  except  Exception, e:
-   print("Ошибка при открытии базы данных:\n"+str(e))
-   sys.exit(2)
-  cur = con.cursor()
   sqlbuf=[]
   st=u'Начало процесса загрузки, файлов для обработки:'+str( len(listdir(input_spo_path)))
   logging.info( st )
@@ -115,6 +115,8 @@ def main():
    #sqlbuf=[]
    if len(rec)==0:
     # (ID, DATE_LOAD, PACKET_ID, PACKET_DATE, REQUEST_ID, REQUEST_DATE, DEBITOR_NAME, DEBITOR_BIRTHDAY, DEBITOR_INN, PROCESSED,DATE_PROCESSED
+    st=u'Начало процесса загрузки файла:'+ff+'. Файл содержит запросов:'+str(len(zaproses) )
+    logging.info( st )
     for chh in zaproses:
      for ffff in fld.keys():
       rr[ffff]=chh.find(fld[ffff]).text
@@ -132,12 +134,29 @@ def main():
     xmlfile.close()
     rename(input_spo_path+ff, input_spo_err_path+ff)
   #EndIF
- print "BUFF", len(sqlbuf)
- if len(sqlbuf)>0:
-  with Profiler() as p:
-   for sqt in sqlbuf:
-    cur.execute(sqlreq,sqt)
-   con.commit()
+  if len(sqlbuf)>0:
+   st=u'Начало процесса загрузки, запросов в базу, всего:'+str(len(sqlbuf) )
+   logging.info( st )
+   with Profiler() as p:
+    for sqt in sqlbuf:
+     cur.execute(sqlreq,sqt)
+    con.commit()
+ elif sys.argv[1]=='process':  
+  #Препроцессинг если нет инн, хотя тут уже они должны быть у всех
+  now=datetime.now()
+  date_processing=datetime.strftime(now,'%d.%m.%Y')
+  sqlpre='update requests set requests.processed=-1,requests.date_processed='+quoted(date_processing)+ ' where requests.debitor_inn is null'
+  cur.execute(sqlpre)
+  con.commit()
+  cur.execute ('SELECT DISTINCT upper(requests.debitor_name),requests.debitor_inn FROM requests')
+  rec=cur.fetchall()
+  sqlans='INSERT INTO PROCESSING_TABLE (ID, ANSWER_ID, DEBITOR_INN, DEBITOR_NAME, DATE_UNLOADING, PROCESSED, DATE_PROCESSED) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  for debitor_name,debitor_inn in rec:
+   id=getgenerator(cur,'GENPROC')
+  
+#Завершение программы
+ con.close() 
+ f.close()
  return
 if __name__ == "__main__":
     main()
