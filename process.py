@@ -72,6 +72,7 @@ def main():
  filescheme=filepar.findall('scheme')
  zaproses=filescheme[0][0]
  if sys.argv[1]=='upload':
+  logging.basicConfig(format = u'%(levelname)-8s [%(asctime)s] %(message)s', level = logging.DEBUG, filename = './upload.log')
   print zaproses.tag
   zapros=zaproses.getchildren()[0]
   zaprostag=zapros.tag
@@ -80,21 +81,6 @@ def main():
    if ch.text in fields:
     fld[ch.text]=ch.tag
   print fld
-  ff=listdir(input_spo_path)
-  print ff[0]
-  fff=ff[0]
-  xmlfile=file(input_spo_path+fff) #'rr4.xml')
-  xml=etree.parse(xmlfile)
-  xmlroot=xml.getroot()
-  print xmlroot.tag
-  zaproses=xmlroot.findall(zaprostag)
-  print len (zaproses)
-  sqlreq='INSERT INTO REQUESTS (ID, DATE_LOAD, PACKET_ID, PACKET_DATE, REQUEST_ID, REQUEST_DATE, DEBITOR_NAME, DEBITOR_BIRTHDAY, DEBITOR_INN, PROCESSED, DATE_PROCESSED) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);'
-  now=datetime.now()
-  date_load=datetime.strftime(now,'%d.%m.%Y')
-  print date_load
-  chh= zaproses[0]
-  rr={}
    #Соединяемся с базой ОСП
   try:
    con = fdb.connect (host=hostname, database=database, user=username, password=password,charset=concodepage)
@@ -102,25 +88,56 @@ def main():
    print("Ошибка при открытии базы данных:\n"+str(e))
    sys.exit(2)
   cur = con.cursor()
-
-  for ffff in fld.keys():
-   rr[ffff]=chh.find(fld[ffff]).text
-  print rr
-  #Проверка на дубликаты, если в данном файле packet_id совпадает с тем что в базе
-  #Прекратить загрузку
-  packet_id=rr['packet_id']
-  sq='select * from requests where requests.packet_id='+(packet_id)
-  print sq
-  cur.execute(sq)
-  rec=cur.fetchall()
-  print len(rec)
-  if len(rec)==0:
-   id=getgenerator(cur,'GENREQ')
-  else:
-   st=u'Загрузка файла '+ff+u' невозможна, так как он уже загружен в базу, packet_id='+(packet_id)+u'есьб  в базе.'
-   logging.error( st ) #logging.error
-   rename(input_path+ff, input_err_path+ff)
- #EndIF
+  sqlbuf=[]
+  st=u'Начало процесса загрузки, файлов для обработки:'+str( len(listdir(input_spo_path)))
+  logging.info( st )
+  for ff in listdir(input_spo_path):
+   xmlfile=file(input_spo_path+ff) #'rr4.xml')
+   xml=etree.parse(xmlfile)
+   xmlroot=xml.getroot()
+   print xmlroot.tag
+   zaproses=xmlroot.findall(zaprostag)
+   print len (zaproses)
+   sqlreq='INSERT INTO REQUESTS (ID, DATE_LOAD, PACKET_ID, PACKET_DATE, REQUEST_ID, REQUEST_DATE, DEBITOR_NAME, DEBITOR_BIRTHDAY, DEBITOR_INN, PROCESSED, DATE_PROCESSED) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+   chh= zaproses[0]
+   rr={}
+   for ffff in fld.keys():
+    rr[ffff]=chh.find(fld[ffff]).text
+   print rr
+   #Проверка на дубликаты, если в данном файле packet_id совпадает с тем что в базе
+   #Прекратить загрузку
+   packet_id=rr['packet_id']
+   sq='select * from requests where requests.packet_id='+(packet_id)
+   print sq
+   cur.execute(sq)
+   rec=cur.fetchall()
+   print len(rec)
+   #sqlbuf=[]
+   if len(rec)==0:
+    # (ID, DATE_LOAD, PACKET_ID, PACKET_DATE, REQUEST_ID, REQUEST_DATE, DEBITOR_NAME, DEBITOR_BIRTHDAY, DEBITOR_INN, PROCESSED,DATE_PROCESSED
+    for chh in zaproses:
+     for ffff in fld.keys():
+      rr[ffff]=chh.find(fld[ffff]).text
+     id=getgenerator(cur,'GENREQ')
+     now=datetime.now()
+     date_load=datetime.strftime(now,'%d.%m.%Y')
+     sqt=(id,(date_load),(rr['packet_id']),(rr['packet_date']),rr['request_id'],(rr['request_date']),(rr['debitor_name']),(rr['debitor_birthday']),(rr['debitor_inn']),0,None)  
+     sqlbuf.append(sqt)
+    print "BUFF", len(sqlbuf)
+    xmlfile.close()
+    rename(input_spo_path+ff, input_spo_arc_path+ff)
+   else:
+    st=u'Загрузка файла '+ff+u' невозможна, так как он уже загружен в базу, packet_id='+(packet_id)+u'есть  в базе.'
+    logging.error( st ) #logging.error
+    xmlfile.close()
+    rename(input_spo_path+ff, input_spo_err_path+ff)
+  #EndIF
+ print "BUFF", len(sqlbuf)
+ if len(sqlbuf)>0:
+  with Profiler() as p:
+   for sqt in sqlbuf:
+    cur.execute(sqlreq,sqt)
+   con.commit()
  return
 if __name__ == "__main__":
     main()
