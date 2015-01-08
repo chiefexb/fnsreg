@@ -8,6 +8,7 @@ import fdb
 import sys
 from os import *
 import logging
+from xlwt import Workbook, easyxf
 fields=['packet_id','packet_date','request_id','request_date','debitor_name','debitor_birthday','debitor_inn']
 class Profiler(object):
     def __enter__(self):
@@ -151,9 +152,17 @@ def main():
   cur.execute ('SELECT DISTINCT upper(requests.debitor_name),requests.debitor_inn FROM requests')
   rec=cur.fetchall()
   sqlans='INSERT INTO PROCESSING_TABLE (ID, ANSWER_ID, DEBITOR_INN, DEBITOR_NAME, DATE_UNLOADING, PROCESSED, DATE_PROCESSED) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  sqlbuf=[]
   for debitor_name,debitor_inn in rec:
    id=getgenerator(cur,'GENPROC')
-  
+   sqt=(id,0,debitor_inn,debitor_name,None,0,None)
+   sqlbuf.append(sqt)
+  for sqt in sqlbuf:
+   cur.execute(sqlans,sqt)
+  con.commit()
+ elif sys.argv[1]=='unload':  
+  book=Workbook()
+  sheet = book.add_sheet('Лист 1')
 #Завершение программы
  con.close() 
  f.close()
